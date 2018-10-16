@@ -41,39 +41,31 @@ sl_f_cfunc.argtypes = [ctypes.c_double,ctypes.c_double, ctypes.c_double, ctypes.
 ########
 ######## Python functions
 ########
-
 def py_gauss_lor_t(amp,lorentz_wid, gauss_wid, center, t):
+    """Calculate a Voigtian (Gaussian*Lorentzian) in time domain"""
     lorentz = py_lor_t(1,lorentz_wid,0,t)
     gauss   = py_gauss_t(1,gauss_wid,0,t)
     return amp*lorentz*gauss*np.exp(-1j*2*np.pi*center*t)
 
-# def py_gauss_lor_f(amp,lorentz_wid, gauss_wid, center, t):
-#     if t[0]<0:
-#         raise Exception('Need to pass time, not frequency (FT is used, not direct calculation)')
-#     sig1 = py_gauss_lor_t(amp,lorentz_wid,gauss_wid,center,t)
-#     sig2 = ft_analysis.do_ft_fftw(sig1,kind='fft')
-#     return np.fft.fftshift(sig2)
-
 def py_gauss_lor_f(amp,lorentz_wid, gauss_wid, center, f):
-    #Computation of the Voigt profile using the Faddeeva function
+    """Calculate a Voightian (Gaussian convolved with Lorentzian) in  Frequency domain
+    Uses wofz. See the Wikipedia article on Voigt profile: https://en.wikipedia.org/wiki/Voigt_profile"""
     z = ((f-center)+1j*lorentz_wid)/gauss_wid/np.sqrt(2)
     return amp*wofz(z).real/gauss_wid/np.sqrt(2*np.pi)
 
 def py_gauss_t(amp,wid,center,t):
-    # #This is normalized for integral from t=0..inf
-    # alpha = (2*np.pi*wid)/4/np.sqrt(np.log(2))
-    # gauss = np.exp(-alpha**2*t**2)/np.sqrt(np.pi)/2/alpha
+    """Calculate a Gaussian in time domain"""
     #Not normalized
     alpha = (2*np.pi*wid)/4/np.sqrt(np.log(2))
     gauss = np.exp(-alpha**2*t**2)
     return amp*gauss*np.exp(-1j*2*np.pi*center*t)
 
 def py_lor_t(amp,wid,center,t):
-    # #This is normalized for integral from t=0..inf
-    # lorentz = np.exp(-t/t2)/t2 
-    #Not normalized
+    """Calculate a Lorentzian in time domain"""
     lorentz = np.exp(-t*wid*np.pi)
     return amp*lorentz*np.exp(-1j*2*np.pi*center*t)
+
+#### These are not used
 
 # def py_lor_f(amp,t2,center,f):
 #     lorentz = amp/np.pi*( 1/t2 )/ ((1/t2**2) + (2*np.pi*(center-f))**2)
@@ -101,6 +93,9 @@ def py_lor_t(amp,wid,center,t):
 ########
 
 def c_sl_t(args):
+    """Calculate the Super-Lorentzian time domain signal, using the c library.
+    Arguments are passed as a list, which will make it easier to used multi-threading
+    to calculate this function (if desired)"""
     amp = args[0]
     wid = args[1]
     wid0 = args[2]
@@ -114,6 +109,12 @@ def c_sl_t(args):
     return fid_re +1j*fid_im
 
 def c_sl_t_lorentz(args):
+    """Calculate the Super-Lorentzian time domain signal, using the c library.
+    Arguments are passed as a list, which will make it easier to used multi-threading
+    to calculate this function (if desired)
+
+    This one uses Lorentzian sub-spectra, which is unphysical. Probably not usefule
+    """
     amp = args[0]
     wid = args[1]
     wid0 = args[2]
@@ -127,6 +128,11 @@ def c_sl_t_lorentz(args):
     return fid_re +1j*fid_im
     
 def c_sl_f(args):
+    """Calculate the Super-Lorentzian frequency domain signal, using the c library.
+    Arguments are passed as a list, which will make it easier to used multi-threading
+    to calculate this function (if desired)
+
+    """
     amp = args[0]
     wid = args[1]
     wid0 = args[2]
@@ -139,74 +145,73 @@ def c_sl_f(args):
     return spect_re
 
 ########
-######## Testing functions
+######## Testing functions (needs updating.)
 ########
-def test():
-    import pylab as plt
-    import time
-    drop_dir = "/home/alan/Dropbox/"
-    import imp
-    ft_analysis = imp.load_source("ft_analysis",drop_dir+"nmr-analysis/"+"ft_analysis.py")
+# def test():
+#     import pylab as plt
+#     import time
+#     drop_dir = "/home/alan/Dropbox/"
+#     import imp
+#     ft_analysis = imp.load_source("ft_analysis",drop_dir+"nmr-analysis/"+"ft_analysis.py")
     
 
-    t = 1e-6*np.arange(130e3)
+#     t = 1e-6*np.arange(130e3)
 
-    #Lorentzian
-    t2  = 1e-3
-    amp = 10
-    center = -512
-
-
+#     #Lorentzian
+#     t2  = 1e-3
+#     amp = 10
+#     center = -512
 
 
 
-    # t = 1e-6*np.arange(130e3)
-    # freq = np.linspace(-250e3,250e3,len(t))
-    # wid = 20e3
-    # wid0 = 1.0
-    # center=-300
-    # p2 = 0.5*(3*np.cos(np.linspace(0,np.pi/2,600))**2 - 1)
-    # weights = np.ones(len(p2))
+
+#     t = 1e-6*np.arange(130e3)
+#     freq = np.linspace(-250e3,250e3,len(t))
+#     wid = 20e3
+#     wid0 = 1.0
+#     center=-300
+#     p2 = 0.5*(3*np.cos(np.linspace(0,np.pi/2,600))**2 - 1)
+#     weights = np.ones(len(p2))
     
-    # t1 = time.time()
-    # fid1 = py_sl_t(1.0,wid, wid0, center, p2, weights, t)
-    # t2 = time.time()
-    # fid2 = c_sl_t([1.0,wid, wid0, center, p2, weights, t])
-    # t3 = time.time()
+#     t1 = time.time()
+#     fid1 = py_sl_t(1.0,wid, wid0, center, p2, weights, t)
+#     t2 = time.time()
+#     fid2 = c_sl_t([1.0,wid, wid0, center, p2, weights, t])
+#     t3 = time.time()
     
-    # print('Python took %g ms' % (1000*(t2-t1)))
-    # print('C took %g ms' % (1000*(t3-t2)))
+#     print('Python took %g ms' % (1000*(t2-t1)))
+#     print('C took %g ms' % (1000*(t3-t2)))
     
-    # if np.allclose(fid1,fid2):
-    #     print('FID test OK!')
-    # else:
-    #     print('FID test failed.')
-    #     plt.plot(fid1.real,'-b',linewidth=2,alpha=0.5,label='Python')
-    #     plt.plot(fid1.imag,'--b',linewidth=2,alpha=0.5)
-    #     plt.plot(fid2.real,'-g',linewidth=2,alpha=0.5,label='C')
-    #     plt.plot(fid2.imag,'--g',linewidth=2,alpha=0.5)
-    #     plt.legend(frameon=False)
-    #     plt.show(block=False)
-    #     debug_here()
+#     if np.allclose(fid1,fid2):
+#         print('FID test OK!')
+#     else:
+#         print('FID test failed.')
+#         plt.plot(fid1.real,'-b',linewidth=2,alpha=0.5,label='Python')
+#         plt.plot(fid1.imag,'--b',linewidth=2,alpha=0.5)
+#         plt.plot(fid2.real,'-g',linewidth=2,alpha=0.5,label='C')
+#         plt.plot(fid2.imag,'--g',linewidth=2,alpha=0.5)
+#         plt.legend(frameon=False)
+#         plt.show(block=False)
+#         debug_here()
     
-    # t1 = time.time()
-    # spect1 = py_sl_f(1.0,wid, wid0, center, p2, weights, freq)
-    # t2 = time.time()
-    # spect2 = c_sl_f([1.0,wid, wid0, center, p2, weights, freq])
-    # t3 = time.time()
+#     t1 = time.time()
+#     spect1 = py_sl_f(1.0,wid, wid0, center, p2, weights, freq)
+#     t2 = time.time()
+#     spect2 = c_sl_f([1.0,wid, wid0, center, p2, weights, freq])
+#     t3 = time.time()
     
-    # print('Python took %g ms' % (1000*(t2-t1)))
-    # print('C took %g ms' % (1000*(t3-t2)))
+#     print('Python took %g ms' % (1000*(t2-t1)))
+#     print('C took %g ms' % (1000*(t3-t2)))
     
-    # if np.allclose(spect1,spect2):
-    #     print('Spect test OK!')
-    # else:
-    #     print('Spect test failed.')
-    #     plt.plot(freq,spect1,'-b',linewidth=2,alpha=0.5, label='Python')
-    #     plt.plot(freq,spect1,'-g',linewidth=2,alpha=0.5, label='C')
-    #     plt.legend(frameon=False)
-    #     plt.show(block=False)
-    #     debug_here()
+#     if np.allclose(spect1,spect2):
+#         print('Spect test OK!')
+#     else:
+#         print('Spect test failed.')
+#         plt.plot(freq,spect1,'-b',linewidth=2,alpha=0.5, label='Python')
+#         plt.plot(freq,spect1,'-g',linewidth=2,alpha=0.5, label='C')
+#         plt.legend(frameon=False)
+#         plt.show(block=False)
+#         debug_here()
     
 
 

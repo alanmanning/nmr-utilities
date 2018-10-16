@@ -1,46 +1,29 @@
 # -*- coding: utf-8 -*-
 
-def plot_spectra_varian(filenames,labels,xlimits,ref_trans_freq,ref_shift_hz,ref_shift_ppm,samp_trans_freq=-1,exportfilenames=[]):
-    import matplotlib.pyplot as plt
-    import numpy as np
-    
-    print(exportfilenames)
-   
-    thefig = plt.figure();
-    thefig.set_facecolor("#FFFFFF");
-    for i in range(len(filenames)):
-        f = filenames[i]
-        if len(filenames) == len(exportfilenames):
-            expf = exportfilenames[i]
-            vals = read_1d_xnmr('/home/manning/nmr/nmr_data/' + expf,False,False)
-        else:
-            vals = read_1d_xnmr('/home/manning/nmr/nmr_data/' + f + '.fidexport.txt',False,False)
-        samp_freqs = vals[0];
-        samp_sigs = vals[1]/max(vals[1])
-        
-        if(samp_trans_freq < 0):
-            samp_trans_freq = get_varian_param('/home/manning/nmr/nmr_data/' + f + '.fid','sfrq')*1e6
-        samp_ppms = get_ppm(samp_trans_freq, samp_freqs, ref_trans_freq, ref_shift_hz, ref_shift_ppm)
-        plt.subplot(len(filenames),1,i+1)
-        plt.plot(samp_ppms,samp_sigs,label=labels[i])
-        if len(xlimits) > 1:
-            plt.xlim(xlimits)
-        plt.grid()
-        if i < len(filenames) -1:
-            plt.gca().axes.set_xticklabels([])
-        plt.gca().axes.set_yticklabels([])
-        plt.gca().invert_xaxis()
-        plt.legend()
-    
-    plt.gca().axes.get_xaxis().set_visible(True)
-    plt.show(block=False)
-    plt.ylabel('Relative intensity')
-    plt.xlabel('PPM')
 
+
+#######################################################
+##### USEFUL FUNCTIONS
+#######################################################
+
+def get_ppm(nu_unknown,nu_known,delta_known):
+    """Calculate the ppm using an external reference.
+    delta_known = the shift of the known reference (eg. if this is 10 ppm, delta_known=10e-6)
+    nu_known = the frequency corresponding to the shift of the known reference (in Hz)
+    nu_known = the frequencies to convert to ppm
+    """
+    assert abs(delta_known) < 1, "delta_known is not in ppm, its in absolute units (eg. if this is 10 ppm, delta_known=10e-6)"
+    
+    nu_ref = nu_known/(delta_known+1)
+    return (nu_unknown - nu_ref)/nu_ref
 
 def convert_tensor(iso=None,aniso=None,asym=None,xx=None,yy=None,zz=None):
+    """Calculate between tensor conventions
+    See: http://anorganik.uni-tuebingen.de/klaus/nmr/index.php?p=conventions/csa/csa
+    Use with convert_tensor(iso=arg1,aniso=arg2,asym=arg3) to get xx, yy, zz
+    Use with convert_tensor(xx=arg1,yy=arg2,zz=arg3) to get iso, aniso, asym
+    """
     import numpy as np
-# http://anorganik.uni-tuebingen.de/klaus/nmr/index.php?p=conventions/csa/csa
 
     if (iso is not None) and (aniso is not None) and (asym is not None) and (xx is None) and (yy is None) and (zz is None):
         aniso_red = 2*aniso/3. #reduced anisotropy
@@ -98,6 +81,50 @@ def convert_tensor(iso=None,aniso=None,asym=None,xx=None,yy=None,zz=None):
 
     else:
         raise Exception('You passed the arguments incorrectly')
+
+#######################################################
+##### FUNCTIONS WHICH ARE PROBABLY NOT USEFUL ANYMORE
+#######################################################
+# These were written to deal with the older, Vnmr data. The 400 MHz
+# spectrometer now has VnmrJ software.
+
+def plot_spectra_varian(filenames,labels,xlimits,ref_trans_freq,ref_shift_hz,ref_shift_ppm,samp_trans_freq=-1,exportfilenames=[]):
+    import matplotlib.pyplot as plt
+    import numpy as np
+    
+    print(exportfilenames)
+   
+    thefig = plt.figure();
+    thefig.set_facecolor("#FFFFFF");
+    for i in range(len(filenames)):
+        f = filenames[i]
+        if len(filenames) == len(exportfilenames):
+            expf = exportfilenames[i]
+            vals = read_1d_xnmr('/home/manning/nmr/nmr_data/' + expf,False,False)
+        else:
+            vals = read_1d_xnmr('/home/manning/nmr/nmr_data/' + f + '.fidexport.txt',False,False)
+        samp_freqs = vals[0];
+        samp_sigs = vals[1]/max(vals[1])
+        
+        if(samp_trans_freq < 0):
+            samp_trans_freq = get_varian_param('/home/manning/nmr/nmr_data/' + f + '.fid','sfrq')*1e6
+        samp_ppms = get_ppm(samp_trans_freq, samp_freqs, ref_trans_freq, ref_shift_hz, ref_shift_ppm)
+        plt.subplot(len(filenames),1,i+1)
+        plt.plot(samp_ppms,samp_sigs,label=labels[i])
+        if len(xlimits) > 1:
+            plt.xlim(xlimits)
+        plt.grid()
+        if i < len(filenames) -1:
+            plt.gca().axes.set_xticklabels([])
+        plt.gca().axes.set_yticklabels([])
+        plt.gca().invert_xaxis()
+        plt.legend()
+    
+    plt.gca().axes.get_xaxis().set_visible(True)
+    plt.show(block=False)
+    plt.ylabel('Relative intensity')
+    plt.xlabel('PPM')
+
 
 def get_varian_param(filename,paramname,is_string=False):
     from os import system
@@ -214,9 +241,7 @@ def get_varian_time_midscan(filename):
 #     delta = (nu_samp - nu_0)/nu_0
 #     return delta
 
-def get_ppm(nu_unknown,nu_known,delta_known):
-    nu_ref = nu_known/(delta_known+1)
-    return (nu_unknown - nu_ref)/nu_ref
+
 
 ## Old get_ppm: this has a bug that introduces a small (~1 ppm error)        
 # def get_ppm(samp_trans_freq, samp_freqs, ref_trans_freq, ref_shift_hz, ref_shift_ppm):

@@ -1,16 +1,18 @@
 import numpy as np
-import pylab as plt
 from IPython.core.debugger import Tracer; debug_here = Tracer()
 import shutil
 import os
 
 def change_param_file(param_file,change_params):
+    """Change the param file of an Xnmr file directory.
+    A helper function for save_xnmr_bin
+    """
     f=open(param_file,'r')
     lines = f.readlines()
     f.close()
 
     #There are actually two npts in the param file
-    #that need to be changed.. this is taken care of here
+    #that need to be changed.. this special case is taken care of here
     if 'npts' in change_params:
         change_params['acq_npts'] = change_params['npts']
 
@@ -33,7 +35,18 @@ def change_param_file(param_file,change_params):
 
 
 
-def save_xnmr_bin(fname,data):
+def save_xnmr_bin_fid(fname,data):
+    """Save an FID to Xnmr binary format.
+    This is designed to save to an existing Xnmr file directory, not create a new one.
+    Use when you've done some processing of Xnmr data in python and you want to
+    save it to a new Xnmr file.
+
+    It will create a backup directory in the Xnmr file directory and copy over everything
+    there prior to overwriting.
+
+    Note that this overwrites 'data' and 'data.fid' with the same data. Therefore, loading
+    'raw' or 'processed' data uxing read_xnmr_bin() will return the same thing.
+    """
 
     change_params = {
         'npts':'',

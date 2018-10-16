@@ -1,9 +1,45 @@
-def fit_reg_nnls(fname,data=[],t2s=[],init_lambda=1,doplot=False,writefiles=False,chisq_misfit=None):
-    import scipy.optimize as opt
-    import numpy as np
-    from IPython.core.debugger import Tracer; debug_here = Tracer()
-    import lmfit
-    import pylab as plt
+import scipy.optimize as opt
+import numpy as np
+import lmfit
+import pylab as plt
+
+def fit_reg_nnls(fname=None,data=None,t2=np.logspace(-3,0.3,200),
+    init_lambda=1,doplot=False,writefiles=False,chisq_misfit=[1.02,1.025]):
+    """ Perform regularized NNLS fitting to CPMG curves to extract T2 distributions.
+    This is a pretty clunky function. It works, but there's a lot of extra junk.
+
+    You can either load data from a txt file (fname) or passed to data directly.
+    If passing to data, it expects data[0] to be CPMG decay time, data[1] to be CPMG decay amplitude.
+
+    t2s are the distribution x-values.
+
+    init_lambda is the initial regularization parameter guess.
+
+    doplot says whether to plot the output (useful for debugging)
+
+    writefiles: an option to write out txt files with the distribution. Probably not useful.
+
+    chisqr_misfit = regularized NNLS always fits worse than non-regularized NNLS. Lambda
+    (the regularization parameter) is adjusted until the regularized NNLS chi-squared is
+    a certain percentage worse than the non-regularized NNLS. This target percentage falls
+    within the range defined by chisqr_misfit. The default value of [1.02,1.025] means the
+    regularized NNLS value will be 2.0 to 2.5% worse than the non-regularized value.
+
+    RETURNS:
+    fit_nreg_y, fit_reg_y, t2, x_nreg, x_reg, final_lambda, chisq_reg, chisq_nreg
+
+    fit_nreg_y = the fit to CPMG curve from non-regularized NNLS
+    fit_reg_y = the fit to CPMG curve from regularized NNLS
+    t2 = the t2 distribution x-values
+    x_nreg = the t2 distribution from non-regularized NNLS (confusingly called "x", when it's more of a "y".)
+    x_reg = the same for regularized NNLS
+    final_lambda = the final lambda value used in the regularized NNLS
+    chisqr_reg = the chi-squared value from the regularized NNLS
+    chisqr_nreg = the chis-squared value from the non-regularized NNLS
+
+    If you just want the regularized NNLS distribution, plot x_reg vs. t2!
+    """
+
 
     def try_lambda(params,C,d,chisq_nreg=-1,chisq_misfit=-1,return_x=False):
         trial_lambda = params['lambda_val']*1
@@ -29,23 +65,15 @@ def fit_reg_nnls(fname,data=[],t2s=[],init_lambda=1,doplot=False,writefiles=Fals
             #ret = (rel - chisq_misfit[0])**2
             # print('trial_lambda=',trial_lambda,' ret=',ret)
             return ret
-    
-    if len(t2s)==0:
-        # print('No t2s given. Using default: t2 = np.logspace(-3,0,500)')
-        t2 = np.logspace(-3,0,200) #1ms to 1s, 180 t2s as in Barta et al. Last one is for constant offset term
-    else:
-        # print('Using the t2s given')
-        t2 = t2s 
-        
-    if chisq_misfit is None:
-        chisq_misfit = [1.02,1.025] #limits for chisq misfit of regularized compared to non-regularized. Usually 2-2.5%
-    
-    if len(data) == 0:
+
+    if fname is not None:
         # print('Loading data from file')
         time, data_y = np.loadtxt(fname,unpack=True)
-    else:
+    elif data is not None:
         # print('Using data passed to function')
         time, data_y = data
+    else:
+        raise Exception('Need to provide an fname to load data from or pass [time,cpmg_amp] directly to data')
 
     
     #NNLS is ||Ax-data_y||^2 subject to x>=0

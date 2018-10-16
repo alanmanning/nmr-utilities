@@ -9,6 +9,9 @@ import pylab as plt
 #    return data - np.average(data)
 
 def do_baseline_correct2(data,points):
+    """Do a baseline correction on a spectrum.
+    You probably don't want to use this function, it never worked too well.
+    """
     if data.ndim==2:
         if data.shape[0] > data.shape[1]:
             raise Exception('ft_analysis.do_ft: Data expected in rows, not columns. data.shape[0] > data.shape[1]!')
@@ -27,6 +30,8 @@ def do_baseline_correct2(data,points):
         return offset,data - offset 
 
 def do_broadening(t,data,gf):
+    """Apply Gaussian broadening
+    """
     if data.ndim==2:
         if data.shape[0] > data.shape[1]:
             raise Exception('ft_analysis.do_ft: Data expected in rows, not columns. data.shape[0] > data.shape[1]!')
@@ -36,9 +41,16 @@ def do_broadening(t,data,gf):
     return data*np.exp(-t*np.pi*gf/1.6651*t*np.pi*gf/1.6651)
 
 def get_freqs(n,dwell):
+    """Get the frequencies associated with do_ft_fftw or do_ft.
+    n=number of datapoints acquired in the FID.
+    dwell=dwell of the FID
+    """
     return np.fft.fftshift(np.fft.fftfreq(n,dwell))
 
 def do_ft(t,data,gf=None,bc=None):
+    """Calculate the spectrum from an FID using Numpy's FT libraries.
+    Don't use this, it's very slow. Use do_ft_fftw below instead.
+    """
     if data.ndim==2:
         if data.shape[0] > data.shape[1]:
             raise Exception('ft_analysis.do_ft: Data expected in rows, not columns. data.shape[0] > data.shape[1]!')
@@ -54,13 +66,24 @@ def do_ft(t,data,gf=None,bc=None):
     else:
         return ft
 
-def do_ft_fftw(data,kind='fft'):
+def do_ft_fftw(data,kind='fft',wisdom_path='/home/alan/Dropbox/nmr-analysis/fftw_wisdom.bin'):
+    """Calculate the spectrum from an FID using FFTW.
+    Use this for calculating FT's. Can handle one and two-dimensional data.
+    
+    FFTW uses a "wisdom" file, which stores FFTW's knowledge of the fastest way to 
+    perform the FT for a specific array. This will vary depending on the datatype, the size, and
+    the CPU. You'll need to change the location of the wisdom file to somewhere on your machine.
+
+    kind='fft' (forward transform) or 'ifft' (inverse transform) NOTE: These are actually
+    mapped to the opposite transforms in FFTW to keep it consistent with the way Xnmr
+    does the transforms.
+    """
     if data.ndim==2:
         if data.shape[0] > data.shape[1]:
             raise Exception('ft_analysis.do_ft: Data expected in rows, not columns. data.shape[0] > data.shape[1]!')
 
     try:
-        wisdom = pickle.load(open('/home/alan/Dropbox/nmr-analysis/fftw_wisdom.bin','rb'))
+        wisdom = pickle.load(open(wisdom_path,'rb'))
     except:
         print('no stored wisdom')
     else:
@@ -95,11 +118,14 @@ def do_ft_fftw(data,kind='fft'):
         raise Exception('do_ft_fftw: Invalid kind of ft. got kind='+str(kind))
     
 
-    pickle.dump(pyfftw.export_wisdom(),open('/home/alan/Dropbox/nmr-analysis/fftw_wisdom.bin','wb'))
+    pickle.dump(pyfftw.export_wisdom(),open(wisdom_path,'wb'))
 
     return b
 
 def baseline_correct(spectra,freqs):
+    """Do a baseline correction on a spectrum.
+    You probably don't want to use this function, it never worked too well.
+    """
     sw = np.max(freqs) - np.min(freqs)
     window = 0.05*sw
     i1 = np.logical_and(freqs<np.max(freqs),freqs>np.max(freqs)-window)
@@ -116,6 +142,10 @@ def baseline_correct(spectra,freqs):
     return bcors
 
 def real_spectra_to_fid(spectra,freqs):
+    """Convert a spectrum which only contains the real part to a complex FID.
+    This is possible because of the Kramers-Kronig relations / Sokhotski–Plemelj theorem / Hilbert transform
+    (the same thing with different name).
+    """
     if spectra.ndim==2:
         if spectra.shape[0] > spectra.shape[1]:
             raise Exception('ft_analysis.real_spectra_to_fid: Data expected in rows, not columns. data.shape[0] > data.shape[1]!')
@@ -134,6 +164,10 @@ def real_spectra_to_fid(spectra,freqs):
 
 
 def auto_phase_imag_to_zero(t,fid,power=4,full_output=False,plot=False):
+    """Auto-phase the FID.
+    This function autophases the FID by phasing until the imaginary part
+    at t=0 is 0. It uses polynomial fitting (with a degree determined by power).
+    """
 
     def resid(phase0,x,y):
         p = np.polyfit(x,(y*np.exp(-1j*phase0/180*np.pi)).imag,power)
@@ -164,6 +198,11 @@ def auto_phase_imag_to_zero(t,fid,power=4,full_output=False,plot=False):
 
 
 def auto_phase_real_to_mag(fid_start,start_sign):
+    """Auto-phase the FID.
+    This function autophases the FID by setting the real part equal to the
+    imaginary part. If the real part should be negative (eg. after an inversion
+    pulse), then start_sign should be 1.
+    """
     if start_sign not in [-1,1]:
         raise Exception('auto_phase_real_to_mag: start_sign must be 1 or -1')
     

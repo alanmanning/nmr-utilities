@@ -10,6 +10,7 @@
 //Compile with: gcc -fPIC -shared -o lineshapes_cfuncs.so -O3 -ffast-math lineshapes_c.c
 
 int sl_t(double amp, double wid, double wid0, double center, double* p2, double* weights, double* t, int npoints, int ntheta, double* fid_re, double * fid_im){
+/* This function calculates a Super-Lorentzian FID made up of Gaussians*/    
     int i,j;
     double W[ntheta], W_squared[ntheta];
     double a,b,c;
@@ -36,6 +37,8 @@ int sl_t(double amp, double wid, double wid0, double center, double* p2, double*
 }
 
 int sl_t_lorentz(double amp, double wid, double wid0, double center, double* p2, double* weights, double* t, int npoints, int ntheta, double* fid_re, double * fid_im){
+/* This function calculates a Super-Lorentzian FID made up of Lorentzians.
+   This is unphysical but might be a useful approximation? */    
     int i,j;
     double W[ntheta];
     double a,b,c;
@@ -62,6 +65,7 @@ int sl_t_lorentz(double amp, double wid, double wid0, double center, double* p2,
 }
 
 int sl_f(double amp, double wid, double wid0, double center, double* p2, double* weights, double* freqs, int npoints, int ntheta, double* spect_re){
+/* This function calculates a Super-Lorentzian lineshape (spectrum) made up of Gaussians*/        
     int i,j;
     double W[ntheta];
     double a,b,c;
@@ -84,6 +88,8 @@ int sl_f(double amp, double wid, double wid0, double center, double* p2, double*
     return 1;
 }
 
+
+/// TESTING CODE BELOW
 /*
 int main(int argc,char *argv[]){
     int i,j;
@@ -94,7 +100,7 @@ int main(int argc,char *argv[]){
     double wid0 = 1.0; //can't be 0
     double center = 0;
     double sw = 500e3;
-ç
+
     double t[n_t], freq[n_t], fid_re[n_t], fid_im[n_t], thetas[n_ang], weights[n_ang], spect_re[n_t];
 
     for(i=0;i<n_ang;i++){
