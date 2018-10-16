@@ -2,7 +2,7 @@
 
 This is a collection of utility functions for analyzing NMR data. I wrote these during my PhD and MSc work in [Carl Michal's lab](https://www.phas.ubc.ca/~michal/) in the Physics department of the University of British Columbia in Vancouver, Canada.
 
-These haven't been put into proper python modules, and I used absolute imports via the imp package:
+These haven't been put into proper python modules, and I used absolute imports via the imp package. For example:
 ```python
 import imp
 read_xnmr_bin = imp.load_source("read_xnmr_bin",<path to read_xnmr_bin.py>)
