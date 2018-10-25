@@ -8,6 +8,10 @@ import imp
 read_xnmr_bin = imp.load_source("read_xnmr_bin",<path to read_xnmr_bin.py>)
 nmrtools = imp.load_source("nmrtools",<path to nmrtools.py>)
 read_xnmr_params = imp.load_source("read_xnmr_params",<path to read_xnmr_params.py>)
+
+#Call like this
+read_xnmr_bin.read_xnmr_bin(<args>)
+nmrtools.get_ppm(<args>)
 ```
 This worked well for me since I was the only one using these functions. They should be modularized if they are used by multiple people.
 
